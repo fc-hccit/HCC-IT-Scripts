@@ -1,0 +1,2 @@
+﻿$ModelName = (Get-WmiObject -Class Win32_ComputerSystem).Model
+Export-WindowsDriver -Online -Destination D:\"$ModelName"\

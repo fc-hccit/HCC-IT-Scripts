@@ -1,0 +1,1 @@
+gam update group Year1students@hopecc.sa.edu.au sync member org "/Primary School (No Mail)/Year 1 Students" all users

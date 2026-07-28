@@ -1,0 +1,1 @@
+﻿Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object { $_.Subject -like "*roamsafe*" } | ForEach-Object { Remove-Item -Path $_.PSPath }

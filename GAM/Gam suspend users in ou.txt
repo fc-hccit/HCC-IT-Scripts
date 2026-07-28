@@ -1,0 +1,1 @@
+gam print users query "orgUnitPath='/Senior School Students/Year 12 Students/Disabled'" | gam csv - gam update user ~primaryEmail suspended on

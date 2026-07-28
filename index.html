@@ -1,0 +1,121 @@
+<html xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+  <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css">    
+    <style>
+      body {
+        background-image: url(img0.jpg);
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+      form {
+        margin-top: 50px;
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 10px #ccc;
+      }
+      .form-group {
+        margin-bottom: 30px;
+      }
+      .form-control {
+        height: 50px;
+        font-size: 18px;
+        border-radius: 10px;
+        border: none;
+        background-color: #e9ecef;
+        transition: all 0.3s ease-in-out;
+      }
+      .form-control:focus {
+        box-shadow: 0px 0px 10px #007bff;
+      }
+      .btn {
+        background-color: #007bff;
+        color: #fff;
+        font-size: 18px;
+        padding: 15px 40px;
+        border-radius: 50px;
+        transition: all 0.3s ease-in-out;
+      }
+      .btn:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  
+<!--[if gte mso 9]><xml>
+<mso:CustomDocumentProperties>
+<mso:xd_Signature msdt:dt="string"></mso:xd_Signature>
+<mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Editor msdt:dt="string">Nathan Dawson</mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Editor>
+<mso:TemplateUrl msdt:dt="string"></mso:TemplateUrl>
+<mso:Order msdt:dt="string">37000.0000000000</mso:Order>
+<mso:ComplianceAssetId msdt:dt="string"></mso:ComplianceAssetId>
+<mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Author msdt:dt="string">Nathan Dawson</mso:display_urn_x003a_schemas-microsoft-com_x003a_office_x003a_office_x0023_Author>
+<mso:xd_ProgID msdt:dt="string"></mso:xd_ProgID>
+<mso:_ExtendedDescription msdt:dt="string"></mso:_ExtendedDescription>
+<mso:TriggerFlowInfo msdt:dt="string"></mso:TriggerFlowInfo>
+<mso:ContentTypeId msdt:dt="string">0x0101008F0F0B693BFE334BB1B3C3E107524F37</mso:ContentTypeId>
+<mso:_SourceUrl msdt:dt="string"></mso:_SourceUrl>
+<mso:_SharedFileIndex msdt:dt="string"></mso:_SharedFileIndex>
+</mso:CustomDocumentProperties>
+</xml><![endif]-->
+<title></title></head>
+  <body>
+    <div class="container">
+      <form action="submit.php" method="post">
+        <div class="form-group">
+          <label for="name">Name:</label>
+          <select class="form-control" id="name" name="name">
+			<option value="" selected disabled hidden> </option>			
+			<?php include 'name.php'; ?>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="teacher">Teacher:</label>
+          <select class="form-control" id="teacher" name="teacher">
+            <option value="" selected disabled hidden> </option>
+			<?php include 'teacher.php'; ?>
+</select>
+</div>
+<div class="form-group">
+<label for="issue">Issue:</label>
+<select class="form-control" id="issue" name="issue">
+<option value="" selected disabled hidden> </option>
+<?php include 'issue.php'; ?>
+</select>
+</div>
+<div class="form-group text-center">
+<input type="submit" class="btn" value="Submit" onclick="clearFields();">
+</div>
+</form>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script>
+function clearFields(){
+document.getElementById("name").selectedIndex = "0";
+document.getElementById("teacher").selectedIndex = "0";
+document.getElementById("issue").selectedIndex = "0";
+}
+$(document).ready(function(){
+$("form").submit(function(e) {
+e.preventDefault();
+$.ajax({
+type: "POST",
+url: "submit.php",
+data: $("form").serialize(),
+success: function(){
+Swal.fire({
+title: 'Thank you for checking in!',
+timer: 2000,
+showConfirmButton: false,
+onClose: () => {
+clearFields();
+}
+});
+}
+});
+});
+});
+</script>
+</div>
+
+  </body>
+</html>

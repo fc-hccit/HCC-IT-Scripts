@@ -1,0 +1,1 @@
+gam print users query "isSuspended=true" | gam csv - gam update user "~primaryEmail" ou "/Suspended Accounts"
