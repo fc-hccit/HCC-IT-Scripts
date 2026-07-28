@@ -1,175 +1,211 @@
-﻿Add-Type -AssemblyName System.Windows.Forms
+﻿Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName WindowsBase
 Import-Module ActiveDirectory
-[System.Windows.Forms.Application]::EnableVisualStyles()
 
-$Form = New-Object system.Windows.Forms.Form
-$Form.ClientSize = '900,160'
-$Form.Text = "Add Staff Member"
-$Form.StartPosition = 'CenterScreen'
+[xml]$xaml = @"
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Add Staff Member"
+    Width="920"
+    Height="380"
+    WindowStartupLocation="CenterScreen"
+    ResizeMode="NoResize"
+    Background="#f8fafc">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderBrush" Value="#cbd5e1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Height" Value="42" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Padding" Value="10,8" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="46" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="#2563eb" />
+            <Setter Property="BorderBrush" Value="#2563eb" />
+            <Setter Property="Padding" Value="16,8" />
+        </Style>
+    </Window.Resources>
 
-$Font = 'Microsoft Sans Serif,12'
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-$Button1 = New-Object system.Windows.Forms.Button
-$Button1.Text = "Create Account"
-$Button1.Width = 180
-$Button1.Height = 60
-$Button1.Location = New-Object System.Drawing.Point(700,70)
-$Button1.Enabled = $false
-$Button1.Font = $Font
-$Button1.DialogResult = [System.Windows.Forms.DialogResult]::OK
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="Add Staff Member" FontSize="28" FontWeight="Bold" Foreground="#0f172a" />
+            <TextBlock Text="Create a new staff account with the required organisational details." FontSize="13" Foreground="#64748b" Margin="0,4,0,0" />
+        </StackPanel>
 
-$ComboBox1 = New-Object system.Windows.Forms.ComboBox
-$ComboBox1.DropDownStyle = 'DropDownList'
-$ComboBox1.Width = 180
-$ComboBox1.Font = $Font
-$ComboBox1.Location = New-Object System.Drawing.Point(20,60)
+        <Border Grid.Row="1" Background="White" CornerRadius="16" Padding="24" BorderBrush="#e2e8f0" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="1.2*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,12,16">
+                    <TextBlock Text="Staff Type" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                    <ComboBox Name="StaffTypeCombo" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="1" Margin="12,0,12,16">
+                    <TextBlock Text="Employee Type" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                    <ComboBox Name="EmployeeTypeCombo" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="0" Grid.Column="2" Margin="12,0,0,16">
+                    <TextBlock Text="Full Name" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                    <TextBox Name="FullNameBox" />
+                </StackPanel>
+
+                <Border Grid.Row="1" Grid.ColumnSpan="3" Background="#f8fafc" BorderBrush="#e2e8f0" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,8,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Username Preview" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,8" />
+                        <TextBlock Name="PreviewLabel" Text="" FontSize="18" FontWeight="Bold" Foreground="#0f172a" />
+                        <TextBlock Name="StatusLabel" Text="Enter a full name to generate the username." FontSize="13" Foreground="#64748b" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Name="CreateButton" Content="Create Account" Width="180" IsEnabled="False" />
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+
+$reader = New-Object System.Xml.XmlNodeReader $xaml
+$Window = [System.Windows.Markup.XamlReader]::Load($reader)
+
+$StaffTypeCombo = $Window.FindName('StaffTypeCombo')
+$EmployeeTypeCombo = $Window.FindName('EmployeeTypeCombo')
+$FullNameBox = $Window.FindName('FullNameBox')
+$PreviewLabel = $Window.FindName('PreviewLabel')
+$StatusLabel = $Window.FindName('StatusLabel')
+$CreateButton = $Window.FindName('CreateButton')
 
 @('Teaching','Non Teaching','TRT','Temporary','OSHC','Wellbeing','Pre Service') | ForEach-Object {
-    [void]$ComboBox1.Items.Add($_)
+    [void]$StaffTypeCombo.Items.Add($_)
 }
-
-$ComboBox2 = New-Object system.Windows.Forms.ComboBox
-$ComboBox2.DropDownStyle = 'DropDownList'
-$ComboBox2.Width = 200
-$ComboBox2.Font = $Font
-$ComboBox2.Location = New-Object System.Drawing.Point(220,60)
 
 @('Full Time Staff','Part Time Staff','Casual Staff') | ForEach-Object {
-    [void]$ComboBox2.Items.Add($_)
+    [void]$EmployeeTypeCombo.Items.Add($_)
 }
 
-$TextBox1 = New-Object system.Windows.Forms.TextBox
-$TextBox1.Width = 260
-$TextBox1.Font = $Font
-$TextBox1.Location = New-Object System.Drawing.Point(440,60)
-
-$UsernamePreview = New-Object system.Windows.Forms.Label
-$UsernamePreview.AutoSize = $true
-$UsernamePreview.Font = $Font
-$UsernamePreview.Location = New-Object System.Drawing.Point(440,110)
-
-$Label1 = New-Object system.Windows.Forms.Label
-$Label1.Text = "Staff Type"
-$Label1.AutoSize = $true
-$Label1.Font = $Font
-$Label1.Location = New-Object System.Drawing.Point(20,25)
-
-$Label2 = New-Object system.Windows.Forms.Label
-$Label2.Text = "Employee Type"
-$Label2.AutoSize = $true
-$Label2.Font = $Font
-$Label2.Location = New-Object System.Drawing.Point(220,25)
-
-$Label3 = New-Object system.Windows.Forms.Label
-$Label3.Text = "Full Name"
-$Label3.AutoSize = $true
-$Label3.Font = $Font
-$Label3.Location = New-Object System.Drawing.Point(440,25)
-
-function Test-FormComplete {
-    $nameText = $TextBox1.Text.Trim()
+function Update-FormState {
+    $nameText = $FullNameBox.Text.Trim()
+    $PreviewLabel.Text = ''
+    $StatusLabel.Text = 'Enter a full name to generate the username.'
+    $StatusLabel.Foreground = [System.Windows.Media.Brushes]::DimGray
+    $CreateButton.IsEnabled = $false
 
     if ([string]::IsNullOrWhiteSpace($nameText)) {
-        $UsernamePreview.Text = ""
-        $Button1.Enabled = $false
         return
     }
 
     $names = $nameText -split '\s+'
-
     if ($names.Count -lt 2) {
-        $UsernamePreview.Text = "Enter first and last name"
-        $UsernamePreview.ForeColor = 'DarkOrange'
-        $Button1.Enabled = $false
+        $PreviewLabel.Text = 'Enter first and last name'
+        $PreviewLabel.Foreground = [System.Windows.Media.Brushes]::DarkOrange
+        $StatusLabel.Text = 'Please provide both a first and last name.'
+        $StatusLabel.Foreground = [System.Windows.Media.Brushes]::DarkOrange
         return
     }
 
-    $Firstname = $names[0]
-    $Lastname = $names[$names.Length - 1]
+    $firstName = $names[0]
+    $lastName = $names[$names.Length - 1]
+    $username = ($firstName + '.' + $lastName).ToLower()
 
-    $Username = ($Firstname + "." + $Lastname).ToLower()
+    $PreviewLabel.Text = "$username@hopecc.sa.edu.au"
+    $PreviewLabel.Foreground = [System.Windows.Media.Brushes]::MidnightBlue
 
-    $UsernamePreview.Text = "$Username@hopecc.sa.edu.au"
+    if (Get-ADUser -Filter "SamAccountName -eq '$username'" -ErrorAction SilentlyContinue) {
+        $StatusLabel.Text = 'That username already exists.'
+        $StatusLabel.Foreground = [System.Windows.Media.Brushes]::IndianRed
+        return
+    }
 
-    if (Get-ADUser -Filter "SamAccountName -eq '$Username'" -ErrorAction SilentlyContinue) {
-        $UsernamePreview.ForeColor = "Red"
-        $Button1.Enabled = $false
+    if ($StaffTypeCombo.SelectedItem -and $EmployeeTypeCombo.SelectedItem) {
+        $CreateButton.IsEnabled = $true
+        $StatusLabel.Text = 'Ready to create the account.'
+        $StatusLabel.Foreground = [System.Windows.Media.Brushes]::ForestGreen
     }
     else {
-        $UsernamePreview.ForeColor = "Green"
-        if ($ComboBox1.SelectedIndex -ne -1 -and $ComboBox2.SelectedIndex -ne -1) {
-            $Button1.Enabled = $true
-        }
+        $StatusLabel.Text = 'Choose a staff type and employee type.'
+        $StatusLabel.Foreground = [System.Windows.Media.Brushes]::DimGray
     }
 }
 
-$ComboBox1.Add_SelectedIndexChanged({
-    if ($ComboBox1.Text -eq "TRT" -or $ComboBox1.Text -eq "Pre Service") {
-        $ComboBox2.SelectedItem = "Casual Staff"
-        $ComboBox2.Enabled = $false
+$StaffTypeCombo.Add_SelectionChanged({
+    if ($StaffTypeCombo.Text -eq 'TRT' -or $StaffTypeCombo.Text -eq 'Pre Service') {
+        $EmployeeTypeCombo.SelectedItem = 'Casual Staff'
+        $EmployeeTypeCombo.IsEnabled = $false
     }
     else {
-        $ComboBox2.Enabled = $true
+        $EmployeeTypeCombo.IsEnabled = $true
     }
 
-    Test-FormComplete
+    Update-FormState
 })
 
-$ComboBox2.Add_SelectedIndexChanged({Test-FormComplete})
-$TextBox1.Add_TextChanged({Test-FormComplete})
+$EmployeeTypeCombo.Add_SelectionChanged({ Update-FormState })
+$FullNameBox.Add_TextChanged({ Update-FormState })
 
-$Form.Controls.AddRange(@(
-$Button1,
-$ComboBox1,
-$ComboBox2,
-$TextBox1,
-$Label1,
-$Label2,
-$Label3,
-$UsernamePreview
-))
-
-$result = $Form.ShowDialog()
-
-if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-
-    $FullName = $TextBox1.Text.Trim()
-    $StaffType = $ComboBox1.Text
-    $EmployeeType = $ComboBox2.Text
+$CreateButton.Add_Click({
+    $FullName = $FullNameBox.Text.Trim()
+    $StaffType = $StaffTypeCombo.Text
+    $EmployeeType = $EmployeeTypeCombo.Text
 
     $names = $FullName -split '\s+'
     if ($names.Count -lt 2) {
-        [System.Windows.Forms.MessageBox]::Show("Please enter a first and last name","Error","OK",'Error')
+        [System.Windows.MessageBox]::Show('Please enter a first and last name.', 'Error', 'OK', 'Error')
         return
     }
 
-    $Firstname = $names[0]
-    $Lastname = $names[$names.Length - 1]
-
-    $Username = ($Firstname + "." + $Lastname).ToLower()
+    $firstName = $names[0]
+    $lastName = $names[$names.Length - 1]
+    $Username = ($firstName + '.' + $lastName).ToLower()
 
     do {
         $rand = Get-Random -Minimum 10000 -Maximum 90000
         $employeeID = "HCC$rand"
     } until (-not (Get-ADUser -Filter "employeeID -eq '$employeeID'" -ErrorAction SilentlyContinue))
 
-    $baseOU = "OU=Staff,DC=hopecc,DC=sa,DC=edu,DC=au"
+    $baseOU = 'OU=Staff,DC=hopecc,DC=sa,DC=edu,DC=au'
     $ouExists = Get-ADOrganizationalUnit -Filter "Name -eq '$StaffType'" -SearchBase $baseOU -ErrorAction SilentlyContinue
     if (-not $ouExists) {
-        [System.Windows.Forms.MessageBox]::Show("OU '$StaffType' not found under Staff. Aborting.","Error")
+        [System.Windows.MessageBox]::Show("OU '$StaffType' not found under Staff. Aborting.", 'Error')
         return
     }
 
     $staffGroup = "$StaffType Staff"
     $staffGroupExists = Get-ADGroup -Filter "Name -eq '$staffGroup'" -ErrorAction SilentlyContinue
     if (-not $staffGroupExists) {
-        [System.Windows.Forms.MessageBox]::Show("Group '$staffGroup' not found. Aborting.","Error")
+        [System.Windows.MessageBox]::Show("Group '$staffGroup' not found. Aborting.", 'Error')
         return
     }
 
     $gpStaffExists = Get-ADGroup -Filter "Name -eq 'gpStaff'" -ErrorAction SilentlyContinue
-
-    $plainPassword = -join ((33..126) | Get-Random -Count 12 | ForEach-Object {[char]$_})
+    $plainPassword = -join ((33..126) | Get-Random -Count 12 | ForEach-Object { [char]$_ })
     $securePass = ConvertTo-SecureString $plainPassword -AsPlainText -Force
 
     try {
@@ -177,14 +213,14 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             -Name $FullName `
             -UserPrincipalName "$Username@hopecc.sa.edu.au" `
             -SamAccountName $Username `
-            -GivenName $Firstname `
-            -Surname $Lastname `
+            -GivenName $firstName `
+            -Surname $lastName `
             -DisplayName $FullName `
             -Description "$StaffType Staff" `
             -EmailAddress "$Username@hopecc.sa.edu.au" `
-            -Company "Hope Christian College" `
+            -Company 'Hope Christian College' `
             -employeeID $employeeID `
-            -Department "Staff" `
+            -Department 'Staff' `
             -Office $StaffType `
             -Path "OU=$StaffType,OU=Staff,DC=hopecc,DC=sa,DC=edu,DC=au" `
             -AccountPassword $securePass `
@@ -192,29 +228,31 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
             -ChangePasswordAtLogon $true
 
         Add-ADGroupMember $staffGroup $Username
-        if ($gpStaffExists) { Add-ADGroupMember "gpStaff" $Username }
+        if ($gpStaffExists) { Add-ADGroupMember 'gpStaff' $Username }
 
-        if ($StaffType -eq "TRT") {
-            Set-ADUser $Username -Replace @{Comment="##Casual Teacher"}
+        if ($StaffType -eq 'TRT') {
+            Set-ADUser $Username -Replace @{ Comment = '##Casual Teacher' }
         }
-        elseif ($StaffType -eq "Pre Service") {
-            Set-ADUser $Username -Replace @{Comment="##Pre Service Teachers"}
+        elseif ($StaffType -eq 'Pre Service') {
+            Set-ADUser $Username -Replace @{ Comment = '##Pre Service Teachers' }
         }
-        elseif ($StaffType -eq "Temporary") {
-            Set-ADUser $Username -Replace @{Comment="##Casual Other"}
+        elseif ($StaffType -eq 'Temporary') {
+            Set-ADUser $Username -Replace @{ Comment = '##Casual Other' }
         }
         else {
-            Set-ADUser $Username -Replace @{Comment="##Current Main"}
+            Set-ADUser $Username -Replace @{ Comment = '##Current Main' }
         }
 
-        Set-ADUser $Username -Replace @{employeeType=$EmployeeType}
+        Set-ADUser $Username -Replace @{ employeeType = $EmployeeType }
 
         try { Set-Clipboard $plainPassword -ErrorAction SilentlyContinue } catch {}
-
-        [System.Windows.Forms.MessageBox]::Show("Account created successfully. Temporary password copied to clipboard.","Complete")
+        [System.Windows.MessageBox]::Show('Account created successfully. Temporary password copied to clipboard.', 'Complete')
+        $Window.Close()
     }
     catch {
-        [System.Windows.Forms.MessageBox]::Show("Error creating account: $($_.Exception.Message)","Error")
+        [System.Windows.MessageBox]::Show("Error creating account: $($_.Exception.Message)", 'Error')
     }
+})
 
-}
+Update-FormState
+[void]$Window.ShowDialog()
