@@ -84,6 +84,15 @@ $currentUserName = [System.Environment]::UserName
 function Update-Status {
     param([string]$Message)
     $txtStatus.Text = $Message
+    Write-Host "[STATUS] $Message"
+}
+
+function Write-LogEntry {
+    param([string]$Message)
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $logLine = "[$timestamp] $Message"
+    Add-Content -Path (Join-Path $PSScriptRoot 'userprofile-deleter.log') -Value $logLine
+    Write-Host $logLine
 }
 
 function Get-ProfileItems {
@@ -182,25 +191,49 @@ $btnDelete.Add_Click({
         $localPath = $selected.LocalPath
         $profileKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\' + $sid
 
+        Write-LogEntry "Starting delete for SID=$sid User=$($selected.UserName) Path=$localPath"
+        Update-Status "Deleting '$($selected.UserName)'..."
+
         if ($deleteFolder -eq $true -and (Test-Path -LiteralPath $localPath)) {
+            Write-LogEntry "Removing folder: $localPath"
             Remove-Item -LiteralPath $localPath -Recurse -Force -ErrorAction SilentlyContinue
+            Write-LogEntry "Folder removal complete. ExistsAfter=$(Test-Path -LiteralPath $localPath)"
+        }
+        else {
+            Write-LogEntry "Folder removal skipped. DeleteFolder=$deleteFolder Exists=$(Test-Path -LiteralPath $localPath)"
         }
 
         if (Test-Path -LiteralPath $profileKey) {
+            Write-LogEntry "Removing registry key: $profileKey"
             Remove-Item -LiteralPath $profileKey -Force -ErrorAction SilentlyContinue
+            Write-LogEntry "Registry key removal complete. ExistsAfter=$(Test-Path -LiteralPath $profileKey)"
+        }
+        else {
+            Write-LogEntry "Registry key not found: $profileKey"
         }
 
         $profilePath = Join-Path $env:SystemDrive 'Users'
         $userFolder = Split-Path $localPath -Leaf
-        if ($userFolder -and $userFolder -ne 'Users' -and (Test-Path -LiteralPath (Join-Path $profilePath $userFolder))) {
-            Remove-Item -LiteralPath (Join-Path $profilePath $userFolder) -Recurse -Force -ErrorAction SilentlyContinue
+        if ($userFolder -and $userFolder -ne 'Users') {
+            $candidateFolder = Join-Path $profilePath $userFolder
+            Write-LogEntry "Checking fallback folder: $candidateFolder"
+            if (Test-Path -LiteralPath $candidateFolder) {
+                Remove-Item -LiteralPath $candidateFolder -Recurse -Force -ErrorAction SilentlyContinue
+                Write-LogEntry "Fallback folder removal complete. ExistsAfter=$(Test-Path -LiteralPath $candidateFolder)"
+            }
+            else {
+                Write-LogEntry "Fallback folder not found: $candidateFolder"
+            }
         }
 
         Update-Status "Deleted profile '$($selected.UserName)'."
+        Write-LogEntry "Delete completed for SID=$sid"
         Refresh-Profiles
     }
     catch {
-        Update-Status "Delete failed: $($_.Exception.Message)"
+        $errorMessage = $_.Exception.Message
+        Write-LogEntry "Delete failed for SID=${sid}: $errorMessage"
+        Update-Status "Delete failed: $errorMessage"
     }
 })
 
