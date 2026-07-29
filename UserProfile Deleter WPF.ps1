@@ -178,15 +178,22 @@ $btnDelete.Add_Click({
     }
 
     try {
-        $profile = Get-CimInstance -ClassName Win32_UserProfile -ErrorAction Stop | Where-Object { $_.SID -eq $selected.SID } | Select-Object -First 1
-        if (-not $profile) {
-            throw "The selected profile could not be found."
+        $sid = $selected.SID
+        $localPath = $selected.LocalPath
+        $profileKey = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\' + $sid
+
+        if ($deleteFolder -eq $true -and (Test-Path -LiteralPath $localPath)) {
+            Remove-Item -LiteralPath $localPath -Recurse -Force -ErrorAction SilentlyContinue
         }
 
-        $profile.Delete()
+        if (Test-Path -LiteralPath $profileKey) {
+            Remove-Item -LiteralPath $profileKey -Force -ErrorAction SilentlyContinue
+        }
 
-        if ($deleteFolder -eq $true -and (Test-Path -LiteralPath $selected.LocalPath)) {
-            Remove-Item -LiteralPath $selected.LocalPath -Recurse -Force -ErrorAction Stop
+        $profilePath = Join-Path $env:SystemDrive 'Users'
+        $userFolder = Split-Path $localPath -Leaf
+        if ($userFolder -and $userFolder -ne 'Users' -and (Test-Path -LiteralPath (Join-Path $profilePath $userFolder))) {
+            Remove-Item -LiteralPath (Join-Path $profilePath $userFolder) -Recurse -Force -ErrorAction SilentlyContinue
         }
 
         Update-Status "Deleted profile '$($selected.UserName)'."
