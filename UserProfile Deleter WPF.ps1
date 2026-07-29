@@ -186,6 +186,18 @@ $btnDelete.Add_Click({
         return
     }
 
+    if ($selected.Loaded -eq $true) {
+        Write-LogEntry "Profile is still loaded/in use; skipping delete for SID=$($selected.SID) User=$($selected.UserName)"
+        Update-Status "Skipped '$($selected.UserName)' because it is still loaded/in use."
+        [System.Windows.MessageBox]::Show(
+            "This profile is currently loaded or in use. Log off the user or restart the device, then try again.",
+            "Action blocked",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Information
+        ) | Out-Null
+        return
+    }
+
     try {
         $sid = $selected.SID
         $localPath = $selected.LocalPath
@@ -197,7 +209,40 @@ $btnDelete.Add_Click({
         if ($deleteFolder -eq $true -and (Test-Path -LiteralPath $localPath)) {
             Write-LogEntry "Removing folder: $localPath"
             Remove-Item -LiteralPath $localPath -Recurse -Force -ErrorAction SilentlyContinue
-            Write-LogEntry "Folder removal complete. ExistsAfter=$(Test-Path -LiteralPath $localPath)"
+            if (Test-Path -LiteralPath $localPath) {
+                Write-LogEntry "Primary removal failed; trying alternate cleanup for hidden/system files"
+                $items = @(Get-ChildItem -LiteralPath $localPath -Force -ErrorAction SilentlyContinue)
+                foreach ($item in $items) {
+                    try {
+                        if ($item.PSIsContainer) {
+                            Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction SilentlyContinue
+                        }
+                        else {
+                            Remove-Item -LiteralPath $item.FullName -Force -ErrorAction SilentlyContinue
+                        }
+                    }
+                    catch {
+                        Write-LogEntry "Could not remove item: $($item.FullName)"
+                    }
+                }
+
+                if (Test-Path -LiteralPath $localPath) {
+                    $folderItem = Get-Item -LiteralPath $localPath -Force -ErrorAction SilentlyContinue
+                    $folderAttributes = $folderItem.Attributes
+                    Write-LogEntry "Folder still exists after alternate cleanup. Attributes=$folderAttributes"
+                    $remainingItems = @(Get-ChildItem -LiteralPath $localPath -Force -ErrorAction SilentlyContinue)
+                    if ($remainingItems.Count -gt 0) {
+                        $remainingNames = ($remainingItems | Select-Object -ExpandProperty FullName) -join '; '
+                        Write-LogEntry "Remaining items under folder: $remainingNames"
+                    }
+                }
+                else {
+                    Write-LogEntry "Folder removal complete after alternate cleanup. ExistsAfter=False"
+                }
+            }
+            else {
+                Write-LogEntry "Folder removal complete. ExistsAfter=False"
+            }
         }
         else {
             Write-LogEntry "Folder removal skipped. DeleteFolder=$deleteFolder Exists=$(Test-Path -LiteralPath $localPath)"
