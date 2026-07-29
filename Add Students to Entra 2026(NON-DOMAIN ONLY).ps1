@@ -305,7 +305,7 @@ Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase,System
 $Xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                Title="Student Account Provisioning" Height="620" Width="780" WindowStartupLocation="CenterScreen">
+                Title="Student Account Provisioning" Height="620" Width="780" MinWidth="720" MinHeight="540" ResizeMode="CanResize" WindowStartupLocation="CenterScreen">
     <Grid Background="#F6F8FA" Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -320,42 +320,49 @@ $Xaml = @"
             <TextBlock Text="Manual or CSV-based Active Directory creation" FontSize="12" Foreground="#555"/>
         </StackPanel>
 
-        <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="10" Margin="0,10,0,10">
+        <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="12" Margin="0,10,0,10">
             <StackPanel Orientation="Vertical">
-                <TextBlock Text="Manual Entries" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <TextBlock Text="Manual Entries" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="100" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <StackPanel Orientation="Vertical" Margin="0,2,0,0">
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
-                        <TextBlock Text="Year" Width="50" VerticalAlignment="Center"/>
-                        <ComboBox Name="Year0" Width="80" Margin="0,0,8,0"/>
-                        <TextBlock Text="Name" Width="50" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                        <TextBox Name="Name0" Width="520" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
-                        <TextBlock Text="Year" Width="50" VerticalAlignment="Center"/>
-                        <ComboBox Name="Year1" Width="80" Margin="0,0,8,0"/>
-                        <TextBlock Text="Name" Width="50" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                        <TextBox Name="Name1" Width="520" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
-                        <TextBlock Text="Year" Width="50" VerticalAlignment="Center"/>
-                        <ComboBox Name="Year2" Width="80" Margin="0,0,8,0"/>
-                        <TextBlock Text="Name" Width="50" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                        <TextBox Name="Name2" Width="520" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
-                        <TextBlock Text="Year" Width="50" VerticalAlignment="Center"/>
-                        <ComboBox Name="Year3" Width="80" Margin="0,0,8,0"/>
-                        <TextBlock Text="Name" Width="50" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                        <TextBox Name="Name3" Width="520" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,4,0,4">
-                        <TextBlock Text="Year" Width="50" VerticalAlignment="Center"/>
-                        <ComboBox Name="Year4" Width="80" Margin="0,0,8,0"/>
-                        <TextBlock Text="Name" Width="50" Margin="12,0,0,0" VerticalAlignment="Center"/>
-                        <TextBox Name="Name4" Width="520" />
-                    </StackPanel>
-                </StackPanel>
+                    <TextBlock Text="Year" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Name="Year0" Grid.Row="0" Grid.Column="1" Margin="0,0,12,8" />
+                    <TextBlock Text="Name" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <TextBox Name="Name0" Grid.Row="0" Grid.Column="3" Margin="0,0,0,8" HorizontalAlignment="Stretch" />
+
+                    <TextBlock Text="Year" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Name="Year1" Grid.Row="1" Grid.Column="1" Margin="0,0,12,8" />
+                    <TextBlock Text="Name" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <TextBox Name="Name1" Grid.Row="1" Grid.Column="3" Margin="0,0,0,8" HorizontalAlignment="Stretch" />
+
+                    <TextBlock Text="Year" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Name="Year2" Grid.Row="2" Grid.Column="1" Margin="0,0,12,8" />
+                    <TextBlock Text="Name" Grid.Row="2" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <TextBox Name="Name2" Grid.Row="2" Grid.Column="3" Margin="0,0,0,8" HorizontalAlignment="Stretch" />
+
+                    <TextBlock Text="Year" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <ComboBox Name="Year3" Grid.Row="3" Grid.Column="1" Margin="0,0,12,8" />
+                    <TextBlock Text="Name" Grid.Row="3" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,8"/>
+                    <TextBox Name="Name3" Grid.Row="3" Grid.Column="3" Margin="0,0,0,8" HorizontalAlignment="Stretch" />
+
+                    <TextBlock Text="Year" Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox Name="Year4" Grid.Row="4" Grid.Column="1" Margin="0,0,12,0" />
+                    <TextBlock Text="Name" Grid.Row="4" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox Name="Name4" Grid.Row="4" Grid.Column="3" Margin="0,0,0,0" HorizontalAlignment="Stretch" />
+                </Grid>
             </StackPanel>
         </Border>
 
@@ -364,27 +371,27 @@ $Xaml = @"
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button Name="CreateButton" Content="Create / Update Students" Width="160" Margin="6" />
-                <Button Name="CsvButton" Content="Import CSV" Width="100" Margin="6" />
-                <Button Name="CopyButton" Content="Copy All Details" Width="130" Margin="6" />
-                <Button Name="OpenCsvButton" Content="Open CSV" Width="90" Margin="6" />
-            </StackPanel>
+            <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" ItemHeight="34" ItemWidth="Auto">
+                <Button Name="CreateButton" Content="Create / Update Students" MinWidth="140" Margin="4" />
+                <Button Name="CsvButton" Content="Import CSV" MinWidth="100" Margin="4" />
+                <Button Name="CopyButton" Content="Copy All Details" MinWidth="120" Margin="4" />
+                <Button Name="OpenCsvButton" Content="Open CSV" MinWidth="90" Margin="4" />
+            </WrapPanel>
         </Grid>
 
-        <Border Grid.Row="3" Background="White" CornerRadius="6" Padding="10">
+        <Border Grid.Row="3" Background="White" CornerRadius="6" Padding="10" VerticalAlignment="Stretch">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <TextBlock Text="Result Log" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                <TextBox Name="StatusText" Grid.Row="1" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Margin="0" />
+                <TextBox Name="StatusText" Grid.Row="1" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Margin="0" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
             </Grid>
         </Border>
 
         <StackPanel Orientation="Vertical" Grid.Row="4" Margin="0,8,0,0" HorizontalAlignment="Stretch">
-            <ProgressBar Name="ProgressBar" Height="18" Width="730" Minimum="0" Maximum="100" Margin="6" />
+            <ProgressBar Name="ProgressBar" Height="18" Minimum="0" Maximum="100" Margin="6,0,6,0" HorizontalAlignment="Stretch" />
         </StackPanel>
     </Grid>
 </Window>

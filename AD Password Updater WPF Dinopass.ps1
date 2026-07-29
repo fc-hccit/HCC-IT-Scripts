@@ -9,6 +9,10 @@ Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName System.Windows.Forms
 
+$ADServer = 'HCC-DC01.hopecc.sa.edu.au'
+$CredentialPath = Join-Path $env:LOCALAPPDATA 'StudentProvisioning\ADCred.xml'
+$script:ADCred = $null
+
 $script:Users = @()
 $script:LastGeneratedPassword = ''
 $script:CsvBuffer = New-Object System.Collections.Generic.List[object]
@@ -33,6 +37,32 @@ function Write-Log {
     $line = "[$timestamp] [$Level] $Message"
     $logBox.AppendText($line + [Environment]::NewLine)
     $logBox.ScrollToEnd()
+}
+
+function Get-ADCredentials {
+    if ($null -eq $script:ADCred) {
+        if (Test-Path $CredentialPath) {
+            try {
+                $script:ADCred = Import-Clixml $CredentialPath
+            }
+            catch {
+                $script:ADCred = $null
+            }
+        }
+
+        if (-not $script:ADCred) {
+            $script:ADCred = Get-Credential -Message 'Enter AD credentials (HOPECC\username)'
+
+            $CredentialFolder = Split-Path $CredentialPath
+            if (-not (Test-Path $CredentialFolder)) {
+                New-Item -ItemType Directory -Path $CredentialFolder -Force | Out-Null
+            }
+
+            $script:ADCred | Export-Clixml $CredentialPath
+        }
+    }
+
+    return $script:ADCred
 }
 
 function Set-BusyState {
@@ -135,6 +165,7 @@ function Import-AdUsers {
     Set-BusyState -Busy $true
     try {
         Import-Module ActiveDirectory -ErrorAction Stop
+        Get-ADCredentials | Out-Null
         $searchBaseRaw = $txtSearchBase.Text.Trim()
         $searchBases = @()
 
@@ -148,7 +179,7 @@ function Import-AdUsers {
         $all = @()
         foreach ($base in $searchBases) {
             try {
-                $segment = Get-ADUser -Filter 'Enabled -eq $true' -SearchBase $base -Properties SamAccountName |
+                $segment = Get-ADUser -Filter 'Enabled -eq $true' -SearchBase $base -Server $ADServer -Credential $script:ADCred -Properties SamAccountName |
                     Select-Object -ExpandProperty SamAccountName
                 $all += $segment
                 Write-Log "Loaded users from $base" 'INFO'
@@ -222,17 +253,17 @@ function Invoke-PasswordReset {
     Set-BusyState -Busy $true
     try {
         $secure = ConvertTo-SecureString -AsPlainText $newPassword -Force
-        Get-ADUser -Identity $sam -ErrorAction Stop | Out-Null
-        Set-ADAccountPassword -Identity $sam -Reset -NewPassword $secure -ErrorAction Stop
+        Get-ADUser -Identity $sam -Server $ADServer -Credential $script:ADCred -ErrorAction Stop | Out-Null
+        Set-ADAccountPassword -Identity $sam -Reset -NewPassword $secure -Server $ADServer -Credential $script:ADCred -ErrorAction Stop
 
         if ($chkUnlock.IsChecked) {
-            Unlock-ADAccount -Identity $sam -ErrorAction Stop
+            Unlock-ADAccount -Identity $sam -Server $ADServer -Credential $script:ADCred -ErrorAction Stop
         }
 
-        Set-ADUser -Identity $sam -ChangePasswordAtLogon ([bool]$chkChangeAtLogon.IsChecked) -ErrorAction Stop
+        Set-ADUser -Identity $sam -ChangePasswordAtLogon ([bool]$chkChangeAtLogon.IsChecked) -Server $ADServer -Credential $script:ADCred -ErrorAction Stop
 
         if ($chkNeverExpires.IsChecked) {
-            Set-ADUser -Identity $sam -PasswordNeverExpires $true -ErrorAction Stop
+            Set-ADUser -Identity $sam -PasswordNeverExpires $true -Server $ADServer -Credential $script:ADCred -ErrorAction Stop
         }
 
         $item = [PSCustomObject]@{
@@ -271,7 +302,8 @@ function Test-AdReadiness {
     Set-BusyState -Busy $true
     try {
         Import-Module ActiveDirectory -ErrorAction Stop
-        $domain = Get-ADDomain -ErrorAction Stop
+        Get-ADCredentials | Out-Null
+        $domain = Get-ADDomain -Server $ADServer -Credential $script:ADCred -ErrorAction Stop
         Write-Log "AD ready. Domain: $($domain.DNSRoot)" 'SUCCESS'
         [System.Windows.MessageBox]::Show("Connected to AD domain: $($domain.DNSRoot)", 'AD Connection', 'OK', 'Information') | Out-Null
     }
