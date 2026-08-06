@@ -54,6 +54,23 @@ function Get-StudentOU {
     else { "OU=Year $Year,OU=Junior School,OU=Students,DC=hopecc,DC=sa,DC=edu,DC=au" }
 }
 
+function Get-TemporaryPassword {
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls
+        $headers = @{ 'User-Agent' = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+        $response = Invoke-WebRequest -Uri 'https://www.dinopass.com/password/simple' -Headers $headers -UseBasicParsing -TimeoutSec 30
+        $password = $response.Content.Trim()
+        if ([string]::IsNullOrWhiteSpace($password) -or $password -match '<') {
+            throw "Invalid password response from DinoPass"
+        }
+        return $password
+    }
+    catch {
+        Update-Status "Warning: Unable to retrieve DinoPass password; falling back to local generator"
+        return -join ((65..90)+(97..122)+(48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
+    }
+}
+
 # ========================
 # Helper: Create or Update Student
 # ========================
@@ -75,7 +92,7 @@ function New-OrUpdateStudent {
     -Filter "SamAccountName -eq '$Username'" `
     -Server $ADServer `
     -Credential $ADCred `
-    -Properties DistinguishedName, Enabled, UserAccountControl, GivenName, Surname, DisplayName, Department, Description, UserPrincipalName, EmployeeID, EmployeeType, pwdLastSet
+    -Properties DistinguishedName, Enabled, UserAccountControl, GivenName, Surname, DisplayName, Department, Description, UserPrincipalName, EmailAddress, Office, EmployeeID, EmployeeType, pwdLastSet
 
     try {
         if ($null -ne $existing) {
@@ -112,12 +129,15 @@ function New-OrUpdateStudent {
             }
 
             $RequiredUserPrincipalName = "$Username@student.hopecc.sa.edu.au"
+            $RequiredOffice = "$YearLevel"
             if ($existing.GivenName -ne $FirstName -or
                 $existing.Surname -ne $LastName -or
                 $existing.DisplayName -ne $FullName -or
                 $existing.Department -ne "Year $YearLevel" -or
                 $existing.Description -ne "2026 Year $YearLevel" -or
-                $existing.UserPrincipalName -ne $RequiredUserPrincipalName) {
+                $existing.UserPrincipalName -ne $RequiredUserPrincipalName -or
+                $existing.EmailAddress -ne $RequiredUserPrincipalName -or
+                $existing.Office -ne $RequiredOffice) {
 
                 Update-Status "Step 5: Updating AD attributes for $Username"
                Set-ADUser $existing `
@@ -128,6 +148,7 @@ function New-OrUpdateStudent {
                 -Description "2026 Year $YearLevel" `
                 -UserPrincipalName $RequiredUserPrincipalName `
                 -EmailAddress $RequiredUserPrincipalName `
+                -Office $RequiredOffice `
                 -Server $ADServer `
                 -Credential $ADCred `
                 -ErrorAction Stop
@@ -165,7 +186,7 @@ function New-OrUpdateStudent {
             if (-not $existing.pwdLastSet -or $existing.pwdLastSet -eq 0) {
                 $PasswordResetRequired = $true
                 Update-Status "Step 8: Password reset required for $Username"
-                $Password = -join ((65..90)+(97..122)+(48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
+                $Password = Get-TemporaryPassword
                Set-ADAccountPassword `
                     -Identity $Username `
                     -NewPassword (ConvertTo-SecureString $Password -AsPlainText -Force) `
@@ -221,7 +242,7 @@ function New-OrUpdateStudent {
 
             # CREATE new
             Update-Status "Step 3: Creating new AD account: $Username"
-            $Password = -join ((65..90)+(97..122)+(48..57) | Get-Random -Count 12 | ForEach-Object {[char]$_})
+            $Password = Get-TemporaryPassword
             $EmployeeID = "HCC$((Get-Random -Minimum 100000 -Maximum 999999))"
 
             Update-Status "Step 4: Running New-ADUser for: $Username"
@@ -246,6 +267,8 @@ function New-OrUpdateStudent {
 
             Set-ADUser $Username `
                 -Replace @{employeeType="Student"; employeeID=$EmployeeID} `
+                -EmailAddress $Email `
+                -Office "$YearLevel" `
                 -Server $ADServer `
                 -Credential $ADCred `
                 -ErrorAction Stop
