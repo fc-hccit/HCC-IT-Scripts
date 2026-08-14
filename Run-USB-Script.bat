@@ -3,10 +3,19 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
 
->nul 2>&1 fltmc || (
-    echo Requesting administrator privileges...
-    powershell -Command "Start-Process -FilePath '%~f0' -Verb RunAs" 
-    exit /b
+if /I "%~1"=="--elevated" goto MENU
+
+for /f "delims=" %%I in ('powershell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent()); [int]$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)" 2^>nul') do set "IS_ADMIN=%%I"
+for /f "delims=" %%S in ('powershell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$sn = (Get-CimInstance Win32_BIOS -ErrorAction SilentlyContinue | Select-Object -ExpandProperty SerialNumber); if ([string]::IsNullOrWhiteSpace($sn)) { $sn = 'Unknown' }; $sn" 2^>nul') do set "SERIAL=%%S"
+
+if /I not "%IS_ADMIN%"=="1" (
+    if defined SERIAL (
+        echo Requesting administrator privileges for serial: %SERIAL%...
+    ) else (
+        echo Requesting administrator privileges...
+    )
+    powershell -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs -ArgumentList '--elevated' -Wait" 
+    exit /b %ERRORLEVEL%
 )
 
 :MENU
