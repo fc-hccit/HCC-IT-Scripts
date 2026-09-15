@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^\\$files = @\\('scripts/Deploy-RemoteFileAccess\\.ps1','scripts/Detect-RemoteFileAccess\\.ps1','scripts/Remove-RemoteFileAccess\\.ps1'\\); foreach \\(\\$file in \\$files\\) \\{ \\$tokens = \\$null; \\$errors = \\$null; \\[System\\.Management\\.Automation\\.Language\\.Parser\\]::ParseFile\\(\\(Resolve-Path \\$file\\), \\[ref\\]\\$tokens, \\[ref\\]\\$errors\\) \\| Out-Null; if \\(\\$errors\\.Count -gt 0\\) \\{ Write-Output \"SYNTAX_ERROR \\$file\"; \\$errors \\| ForEach-Object \\{ Write-Output \\$_\\.Message \\} \\} else \\{ Write-Output \"SYNTAX_OK \\$file\" \\} \\}$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

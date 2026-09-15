@@ -65,6 +65,17 @@ function Get-ADCredentials {
     return $script:ADCred
 }
 
+function Initialize-ADConnection {
+    Import-Module ActiveDirectory -ErrorAction Stop
+    $credential = Get-ADCredentials
+    $domain = Get-ADDomain -Server $ADServer -Credential $credential -ErrorAction Stop
+
+    return [PSCustomObject]@{
+        Credential = $credential
+        Domain = $domain.DNSRoot
+    }
+}
+
 function Set-BusyState {
     param([bool]$Busy)
 
@@ -164,8 +175,7 @@ function Start-ClipboardExpiryTimer {
 function Import-AdUsers {
     Set-BusyState -Busy $true
     try {
-        Import-Module ActiveDirectory -ErrorAction Stop
-        Get-ADCredentials | Out-Null
+        $adSession = Initialize-ADConnection
         $searchBaseRaw = $txtSearchBase.Text.Trim()
         $searchBases = @()
 
@@ -301,11 +311,9 @@ function Invoke-PasswordReset {
 function Test-AdReadiness {
     Set-BusyState -Busy $true
     try {
-        Import-Module ActiveDirectory -ErrorAction Stop
-        Get-ADCredentials | Out-Null
-        $domain = Get-ADDomain -Server $ADServer -Credential $script:ADCred -ErrorAction Stop
-        Write-Log "AD ready. Domain: $($domain.DNSRoot)" 'SUCCESS'
-        [System.Windows.MessageBox]::Show("Connected to AD domain: $($domain.DNSRoot)", 'AD Connection', 'OK', 'Information') | Out-Null
+        $adSession = Initialize-ADConnection
+        Write-Log "AD ready. Domain: $($adSession.Domain)" 'SUCCESS'
+        [System.Windows.MessageBox]::Show("Connected to AD domain: $($adSession.Domain)", 'AD Connection', 'OK', 'Information') | Out-Null
     }
     catch {
         Write-Log "AD readiness check failed: $($_.Exception.Message)" 'ERROR'
