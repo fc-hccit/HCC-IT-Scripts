@@ -1,0 +1,19 @@
+<Window x:Class="PowerShellAppCreator.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="PowerShell App Creator" Height="500" Width="760" MinWidth="680" WindowStartupLocation="CenterScreen" Background="#F5F7FA" FontFamily="Segoe UI">
+    <Window.Resources>
+        <SolidColorBrush x:Key="Muted" Color="#61707D"/><SolidColorBrush x:Key="Line" Color="#DCE3E8"/><SolidColorBrush x:Key="Teal" Color="#007F86"/>
+        <Style TargetType="TextBox"><Setter Property="Padding" Value="9,7"/><Setter Property="Margin" Value="0,4,8,12"/><Setter Property="BorderBrush" Value="{StaticResource Line}"/></Style>
+        <Style TargetType="Button"><Setter Property="Padding" Value="12,7"/><Setter Property="Margin" Value="4"/></Style>
+    </Window.Resources>
+    <Grid Margin="26"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,20"><TextBlock Text="PowerShell App Creator" FontSize="27" FontWeight="SemiBold"/><TextBlock Text="Turn a .ps1 script into a Windows executable" Foreground="{StaticResource Muted}" Margin="0,4,0,0"/></StackPanel>
+        <Border Grid.Row="1" Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="20"><StackPanel>
+            <TextBlock Text="APP INPUTS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Teal}"/>
+            <TextBlock Text="PowerShell script (.ps1)" FontWeight="SemiBold" Margin="0,18,0,0"/><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="ScriptPath" IsReadOnly="True"/><Button x:Name="BrowseScript" Grid.Column="1" Content="Browse"/></Grid>
+            <TextBlock Text="Application icon (.ico)" FontWeight="SemiBold"/><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="IconPath" IsReadOnly="True"/><Button x:Name="BrowseIcon" Grid.Column="1" Content="Browse"/></Grid>
+            <TextBlock Text="Output executable (.exe)" FontWeight="SemiBold"/><Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="OutputPath"/><Button x:Name="BrowseOutput" Grid.Column="1" Content="Browse"/></Grid>
+            <TextBlock Text="The script and icon are embedded into a new .NET executable. The .NET SDK and PowerShell are required on the creator computer." Foreground="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,0"/>
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,18,0,0" Foreground="#B42318"/>
+        </StackPanel></Border>
+        <DockPanel Grid.Row="2" Margin="0,16,0,0"><TextBlock Text="In-house .NET wrapper" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/><StackPanel Orientation="Horizontal" DockPanel.Dock="Right"><Button x:Name="GenerateButton" Content="Create EXE" Background="{StaticResource Teal}" Foreground="White" IsEnabled="False"/></StackPanel></DockPanel>
+    </Grid>
+</Window>

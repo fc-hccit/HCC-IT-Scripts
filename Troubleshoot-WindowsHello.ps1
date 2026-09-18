@@ -98,30 +98,34 @@ function Get-NGCStatus {
 
     $ngc = "C:\Windows\ServiceProfiles\LocalService\AppData\Local\Microsoft\NGC"
 
-    if (Test-Path $ngc) {
+    $dsreg = Get-Command dsregcmd -ErrorAction SilentlyContinue
 
-        try {
-            $items = Get-ChildItem $ngc -Force -ErrorAction SilentlyContinue
-
-            return [PSCustomObject]@{
-                Exists = $true
-                Items  = $items.Count
-                Path   = $ngc
-            }
-        }
-        catch {
-            return [PSCustomObject]@{
-                Exists = $true
-                Items  = -1
-                Path   = $ngc
-            }
+    if (-not $dsreg) {
+        return [PSCustomObject]@{
+            Exists    = $false
+            Protected = $true
+            Path      = $ngc
+            Status    = "Unavailable"
+            Reason    = "dsregcmd is not available on this device."
         }
     }
 
+    $statusText = & dsregcmd /status 2>$null
+    $ngcLine = $statusText | Where-Object { $_ -match '^\s*NgcSet\s*:\s*(.*)$' } | Select-Object -First 1
+
+    $ngcValue = if ($ngcLine) {
+        ($ngcLine -split ':', 2)[1].Trim()
+    }
+    else {
+        "Unknown"
+    }
+
     return [PSCustomObject]@{
-        Exists = $false
-        Items  = 0
-        Path   = $ngc
+        Exists    = $true
+        Protected = $true
+        Path      = $ngc
+        Status    = $ngcValue
+        Reason    = "Windows Hello state is reported by dsregcmd /status. The NGC folder itself is protected credential material and is not inspected directly."
     }
 }
 
@@ -351,22 +355,39 @@ $btnCheck.Add_Click({
 
     $ngc = Get-NGCStatus
 
-    if (-not $ngc.Exists) {
+    if ($ngc.Status -eq "YES") {
 
-        $txtNGC.Text = "NGC folder does not exist"
+        $txtNGC.Text = "NGC registered - Windows Hello is active"
+        $txtNGC.ForeColor = [System.Drawing.Color]::Green
+
+        Add-Log "NgcSet reports YES. Windows Hello has an active NGC registration."
+
+    }
+    elseif ($ngc.Status -eq "NO") {
+
+        $txtNGC.Text = "NGC not set - Windows Hello registration is missing"
         $txtNGC.ForeColor = [System.Drawing.Color]::Orange
 
-        Add-Log "NGC folder does not exist."
+        Add-Log "NgcSet reports NO. The NGC registration is missing or not active."
+
+    }
+    elseif ($ngc.Status -eq "Unknown") {
+
+        $txtNGC.Text = "NGC status unavailable"
+        $txtNGC.ForeColor = [System.Drawing.Color]::Orange
+
+        Add-Log "NgcSet could not be determined from dsregcmd /status."
 
     }
     else {
 
-        $txtNGC.Text = "NGC exists - $($ngc.Items) item(s)"
-        $txtNGC.ForeColor = [System.Drawing.Color]::Green
+        $txtNGC.Text = "NGC status: $($ngc.Status)"
+        $txtNGC.ForeColor = [System.Drawing.Color]::Orange
 
-        Add-Log "NGC folder exists."
-        Add-Log "NGC items: $($ngc.Items)"
+        Add-Log "NgcSet status: $($ngc.Status)"
     }
+
+    Add-Log "Reason: $($ngc.Reason)"
 
     # Diagnosis
 
@@ -418,18 +439,21 @@ $btnRepair.Add_Click({
 
     try {
 
-        Add-Log "Taking ownership of NGC..."
+        if (Test-Path $ngc) {
+            Add-Log "Taking ownership of NGC..."
+            takeown.exe /f $ngc /r /d y | Out-Null
 
-        takeown.exe /f $ngc /r /d y | Out-Null
+            Add-Log "Granting Administrators access..."
+            icacls.exe $ngc /grant administrators:F /t /c | Out-Null
 
-        Add-Log "Granting Administrators access..."
-
-        icacls.exe $ngc /grant administrators:F /t /c | Out-Null
-
-        Add-Log "Removing NGC contents..."
-
-        Get-ChildItem $ngc -Force -ErrorAction SilentlyContinue |
-            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+            Add-Log "Removing NGC contents..."
+            Get-ChildItem $ngc -Force -ErrorAction SilentlyContinue |
+                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        else {
+            Add-Log "NGC folder does not exist. Creating it before repair..."
+            New-Item -ItemType Directory -Path $ngc -Force | Out-Null
+        }
 
         Add-Log "NGC repair completed."
 

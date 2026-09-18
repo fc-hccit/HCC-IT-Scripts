@@ -1,5 +1,32 @@
 ﻿Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+
+$RSATCapabilityName = 'RSAT.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0'
+
+if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) {
+    $InstallRSAT = [System.Windows.Forms.MessageBox]::Show(
+        'The Active Directory module is not installed. Download and install RSAT now? Administrator approval will be required.',
+        'Active Directory module required',
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Question
+    )
+
+    if ($InstallRSAT -ne [System.Windows.Forms.DialogResult]::Yes) {
+        throw 'The Active Directory module is required to run this script.'
+    }
+
+    $InstallCommand = "`$Capability = Get-WindowsCapability -Online -Name '$RSATCapabilityName' -ErrorAction Stop; if (`$Capability.State -ne 'Installed') { Add-WindowsCapability -Online -Name '$RSATCapabilityName' -ErrorAction Stop | Out-Null }"
+    $Installer = Start-Process -FilePath 'powershell.exe' -Verb RunAs -Wait -PassThru -ArgumentList @(
+        '-NoProfile',
+        '-ExecutionPolicy', 'Bypass',
+        '-Command', $InstallCommand
+    )
+
+    if ($Installer.ExitCode -ne 0 -or -not (Get-Module -ListAvailable -Name ActiveDirectory)) {
+        throw "RSAT installation did not complete. Run this command in an elevated PowerShell session: Add-WindowsCapability -Online -Name $RSATCapabilityName"
+    }
+}
+
 Import-Module ActiveDirectory -ErrorAction Stop
 
 # ========================

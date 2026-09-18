@@ -1,0 +1,2 @@
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\New-Microsoft365Group\publish\New-Microsoft365Group.pdb
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\New-Microsoft365Group\publish\New-Microsoft365Group.exe

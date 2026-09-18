@@ -1,0 +1,2 @@
+C:\Users\ITMGRPC-ND\AppData\Local\Temp\PowerShell-App-Creator-publish-check\PowerShell-App-Creator.pdb
+C:\Users\ITMGRPC-ND\AppData\Local\Temp\PowerShell-App-Creator-publish-check\PowerShell-App-Creator.exe

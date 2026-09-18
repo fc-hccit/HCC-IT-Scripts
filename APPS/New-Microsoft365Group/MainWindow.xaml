@@ -1,0 +1,45 @@
+<Window x:Class="NewMicrosoft365Group.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Microsoft 365 Group Creator" Icon="icon.ico" Height="780" Width="980" MinHeight="650" MinWidth="820"
+        WindowStartupLocation="CenterScreen" Background="#F5F7FA" FontFamily="Segoe UI">
+    <Window.Resources>
+        <SolidColorBrush x:Key="Ink" Color="#17212B"/><SolidColorBrush x:Key="Muted" Color="#61707D"/>
+        <SolidColorBrush x:Key="Line" Color="#DCE3E8"/><SolidColorBrush x:Key="Teal" Color="#007F86"/>
+        <Style TargetType="TextBox"><Setter Property="Padding" Value="9,6"/><Setter Property="Margin" Value="0,4,0,10"/><Setter Property="BorderBrush" Value="{StaticResource Line}"/></Style>
+        <Style TargetType="ComboBox"><Setter Property="Padding" Value="7,5"/><Setter Property="Margin" Value="0,4,0,10"/></Style>
+        <Style TargetType="Button"><Setter Property="Padding" Value="13,7"/><Setter Property="Margin" Value="4"/></Style>
+    </Window.Resources>
+    <Grid Margin="26">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" Margin="0,0,0,16"><TextBlock Text="Microsoft 365 Group Creator" FontSize="26" FontWeight="SemiBold"/><TextBlock Text="Create a ready-to-use group for your team" Foreground="{StaticResource Muted}" Margin="0,3,0,0"/></StackPanel>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel>
+            <Border Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="18" Margin="0,0,0,12"><StackPanel>
+                <TextBlock Text="GROUP DETAILS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Teal}"/>
+                <TextBlock Text="Group name *" FontWeight="SemiBold" Margin="0,14,0,0"/><TextBox x:Name="GroupName" Text="HCC "/>
+                <TextBlock Text="Description" FontWeight="SemiBold"/><TextBox x:Name="Description" Height="58" AcceptsReturn="True" TextWrapping="Wrap"/>
+                <TextBlock Text="Email address *" FontWeight="SemiBold"/><TextBox x:Name="EmailAddress"/><TextBlock Text="Format: hcc.groupname@ccmschools.onmicrosoft.com. Spaces are removed automatically." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,-6,0,8"/>
+                <CheckBox x:Name="AddHopeCcAlias" Content="Add a HopeCC secondary email address" Margin="0,4"/><TextBox x:Name="HopeCcAlias" Text="pestaff@hopecc.sa.edu.au" IsEnabled="False"/>
+                <TextBlock Text="Privacy" FontWeight="SemiBold"/><ComboBox x:Name="Privacy"><ComboBoxItem Content="Private" IsSelected="True"/><ComboBoxItem Content="Public"/></ComboBox>
+            </StackPanel></Border>
+            <Grid Margin="0,0,0,12"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="18" Margin="0,0,6,0"><StackPanel>
+                    <TextBlock Text="OWNERS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Teal}"/><TextBlock Text="At least one owner is required." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,3,0,8"/>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="OwnerSearch" Margin="0,0,5,7"/><Button x:Name="OwnerSearchButton" Grid.Column="1" Content="Search" Margin="0,0,0,7"/></Grid>
+                    <ListBox x:Name="OwnerResults" Height="105" DisplayMemberPath="Display"/><TextBlock Text="Selected owners" FontWeight="SemiBold" Margin="0,10,0,4"/><ListBox x:Name="SelectedOwners" Height="70" DisplayMemberPath="Display"/>
+                </StackPanel></Border>
+                <Border Grid.Column="1" Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="18" Margin="6,0,0,0"><StackPanel>
+                    <TextBlock Text="MEMBERS" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Teal}"/><TextBlock Text="Optional. Search and select one or more members." Foreground="{StaticResource Muted}" FontSize="12" Margin="0,3,0,8"/>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="MemberSearch" Margin="0,0,5,7"/><Button x:Name="MemberSearchButton" Grid.Column="1" Content="Search" Margin="0,0,0,7"/></Grid>
+                    <ListBox x:Name="MemberResults" Height="105" DisplayMemberPath="Display"/><TextBlock Text="Selected members" FontWeight="SemiBold" Margin="0,10,0,4"/><ListBox x:Name="SelectedMembers" Height="70" DisplayMemberPath="Display"/>
+                </StackPanel></Border>
+            </Grid>
+            <Border Background="White" BorderBrush="{StaticResource Line}" BorderThickness="1" Padding="18" Margin="0,0,0,12"><StackPanel>
+                <TextBlock Text="EMAIL &amp; SUBSCRIPTION" FontSize="12" FontWeight="Bold" Foreground="{StaticResource Teal}"/><CheckBox x:Name="AutoSubscribe" Content="Send group conversations and events to members' inboxes" IsChecked="True" Margin="0,13,0,4"/><CheckBox x:Name="ExternalSenders" Content="Allow external senders"/>
+            </StackPanel></Border>
+            <Border x:Name="ProgressPanel" Background="#E9F4F3" Padding="16" Visibility="Collapsed"><StackPanel><TextBlock x:Name="ProgressTitle" Text="Creating group..." FontSize="17" FontWeight="SemiBold"/><TextBlock x:Name="ProgressText" TextWrapping="Wrap" Margin="0,10,0,0"/></StackPanel></Border>
+            <TextBlock x:Name="StatusText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,8,0,0"/>
+        </StackPanel></ScrollViewer>
+        <DockPanel Grid.Row="2" Margin="0,12,0,0"><TextBlock x:Name="SignedInText" Text="Not connected" Foreground="{StaticResource Muted}" VerticalAlignment="Center"/><StackPanel Orientation="Horizontal" DockPanel.Dock="Right"><Button x:Name="ConnectButton" Content="Connect to Microsoft Graph"/><Button x:Name="CreateButton" Content="Create Microsoft 365 Group" Background="{StaticResource Teal}" Foreground="White" IsEnabled="False"/></StackPanel></DockPanel>
+    </Grid>
+</Window>

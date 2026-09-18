@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "dgSpecHash": "sNXEmY4bJmM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\ITMGRPC-ND\\Documents\\GitHub\\HCC-IT-Scripts\\PowerShell-App-Creator\\PowerShell-App-Creator.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ITMGRPC-ND\\.nuget\\packages\\microsoft.net.illink.tasks\\10.0.11\\microsoft.net.illink.tasks.10.0.11.nupkg.sha512",
+    "C:\\Users\\ITMGRPC-ND\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\10.0.11\\microsoft.netcore.app.runtime.win-x64.10.0.11.nupkg.sha512",
+    "C:\\Users\\ITMGRPC-ND\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\10.0.11\\microsoft.windowsdesktop.app.runtime.win-x64.10.0.11.nupkg.sha512",
+    "C:\\Users\\ITMGRPC-ND\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\10.0.11\\microsoft.aspnetcore.app.runtime.win-x64.10.0.11.nupkg.sha512"
+  ],
+  "logs": []
+}

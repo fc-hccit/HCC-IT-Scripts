@@ -20,7 +20,7 @@ function Get-SetupFiles {
         [string]$FolderPath
     )
 
-    $candidateFiles = Get-ChildItem -Path $FolderPath -File -Recurse -Include '*.exe', '*.msi' |
+    $candidateFiles = Get-ChildItem -Path $FolderPath -File | Where-Object { $_.Extension -match '\.(exe|msi|bat|cmd|ps1)$' } |
         Sort-Object -Property FullName
 
     return $candidateFiles
@@ -148,9 +148,11 @@ $xaml = @'
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBox Name="SetupFolderText" Grid.Column="0" Height="36" IsReadOnly="True" VerticalContentAlignment="Center"/>
-            <Button Name="BrowseButton" Grid.Column="1" Width="120" Height="36" Margin="12,0,0,0" Content="Browse"/>
+            <Button Name="BrowseFileButton" Grid.Column="1" Width="120" Height="36" Margin="12,0,0,0" Content="Browse File"/>
+            <Button Name="BrowseFolderButton" Grid.Column="2" Width="140" Height="36" Margin="8,0,0,0" Content="Browse Folder"/>
         </Grid>
 
         <TextBlock Grid.Row="2" Margin="0,6,0,4" Text="Select installer/script file:" FontWeight="SemiBold"/>
@@ -175,7 +177,8 @@ $window = [System.Windows.Markup.XamlReader]::Load($reader)
 
 $statusLabel = $window.FindName('StatusLabel')
 $setupFolderText = $window.FindName('SetupFolderText')
-$browseButton = $window.FindName('BrowseButton')
+$browseFileButton = $window.FindName('BrowseFileButton')
+$browseFolderButton = $window.FindName('BrowseFolderButton')
 $installerComboBox = $window.FindName('InstallerComboBox')
 $outputFolderText = $window.FindName('OutputFolderText')
 $logText = $window.FindName('LogText')
@@ -232,12 +235,11 @@ $appendLog = {
     $logText.ScrollToEnd()
 }
 
-$browseButton.Add_Click({
+$browseFileButton.Add_Click({
     $fileDialog = New-Object System.Windows.Forms.OpenFileDialog
     $fileDialog.Filter = 'Installer files (*.exe;*.msi;*.bat;*.cmd;*.ps1)|*.exe;*.msi;*.bat;*.cmd;*.ps1'
-    $fileDialog.Title = 'Select an installer file or press Cancel to choose a folder'
+    $fileDialog.Title = 'Select an installer file'
 
-    $selectedPath = $null
     if ($fileDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $selectedPath = $fileDialog.FileName
         if (Test-Path -Path $selectedPath) {
@@ -251,19 +253,26 @@ $browseButton.Add_Click({
             $installerComboBox.SelectedIndex = -1
             $outputFolderText.Text = $script:selectedOutputFolder
             $statusLabel.Text = 'Single installer file detected and staged in a temporary folder.'
-            return
         }
     }
+})
 
-    $folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $folderDialog.Description = 'Choose the application setup folder.'
+$browseFolderButton.Add_Click({
+    $folderDialog = New-Object System.Windows.Forms.OpenFileDialog
+    $folderDialog.Title = 'Select Folder'
+    $folderDialog.Filter = 'All files (*.*)|*.*'
+    $folderDialog.CheckFileExists = $false
+    $folderDialog.ValidateNames = $false
+    $folderDialog.FileName = 'SELECT FOLDER'
 
     if ($folderDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-        $selectedFolder = $folderDialog.SelectedPath
+        $selectedFolder = Split-Path $folderDialog.FileName -Parent
+
         $script:selectedSetupFolder = $selectedFolder
-        $script:selectedOutputFolder = $selectedFolder
+        $parentFolder = Split-Path -Parent $selectedFolder
+        $script:selectedOutputFolder = $parentFolder
         $setupFolderText.Text = $selectedFolder
-        $outputFolderText.Text = $selectedFolder
+        $outputFolderText.Text = $parentFolder
         $installerComboBox.IsEnabled = $true
         $installerComboBox.Items.Clear()
 
@@ -277,12 +286,12 @@ $browseButton.Add_Click({
 
             $installerComboBox.SelectedIndex = 0
             $script:selectedInstallerPath = $setupFiles[0].FullName
-            $script:selectedOutputFolder = New-OutputFolderForInstaller -BaseFolder $selectedFolder -InstallerPath $setupFiles[0].FullName
+            $script:selectedOutputFolder = New-OutputFolderForInstaller -BaseFolder $parentFolder -InstallerPath $setupFiles[0].FullName
             $outputFolderText.Text = $script:selectedOutputFolder
             $statusLabel.Text = 'Folder selected. Choose an installer file from the dropdown.'
         } else {
             $script:selectedInstallerPath = $null
-            $script:selectedOutputFolder = $null
+            $script:selectedOutputFolder = $parentFolder
             $installerComboBox.IsEnabled = $false
             $installerComboBox.Text = ''
             $statusLabel.Text = 'No .exe or .msi file was found in the selected folder.'
@@ -295,7 +304,8 @@ $installerComboBox.Add_SelectionChanged({
         $selectedSetupFilePath = [string]$installerComboBox.SelectedItem
         $script:selectedInstallerPath = $selectedSetupFilePath
         $script:selectedSetupFolder = [System.IO.Path]::GetDirectoryName($selectedSetupFilePath)
-        $script:selectedOutputFolder = New-OutputFolderForInstaller -BaseFolder ([System.IO.Path]::GetDirectoryName($selectedSetupFilePath)) -InstallerPath $selectedSetupFilePath
+        $parentFolder = Split-Path -Parent $script:selectedSetupFolder
+        $script:selectedOutputFolder = New-OutputFolderForInstaller -BaseFolder $parentFolder -InstallerPath $selectedSetupFilePath
         $outputFolderText.Text = $script:selectedOutputFolder
     }
 })

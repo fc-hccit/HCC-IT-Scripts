@@ -1,0 +1,11 @@
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.csproj.AssemblyReference.cache
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\MainWindow.baml
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\MainWindow.g.cs
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\App.g.cs
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group_MarkupCompile.cache
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.g.resources
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.AssemblyInfoInputs.cache
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.AssemblyInfo.cs
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.csproj.CoreCompileInputs.cache
+C:\Users\ITMGRPC-ND\Documents\GitHub\HCC-IT-Scripts\New-Microsoft365Group\obj\Release\net10.0-windows\New-Microsoft365Group.sourcelink.json
