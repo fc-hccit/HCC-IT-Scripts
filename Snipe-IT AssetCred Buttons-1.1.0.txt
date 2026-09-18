@@ -1,0 +1,103 @@
+// ==UserScript==
+// @name         Snipe-IT AssetCred Buttons
+// @namespace    ccm.assetcred
+// @version      1.1.0
+// @description  Add large BitLocker/LAPS buttons and hide native Snipe QR image
+// @match        *://asset.manage.ccmschools.edu.au/hardware/*
+// @run-at       document-idle
+// @grant        none
+// ==/UserScript==
+
+(function () {
+  "use strict";
+
+  const CONTAINER_ID = "tm-assetcred-buttons";
+
+  function getSerial() {
+    const el = document.querySelector("#serial-number code, .js-copy-license_key code");
+    if (!el) return null;
+    return (el.textContent || "").trim() || null;
+  }
+
+  function getHost() {
+    return (
+      document.querySelector(".asset-qr-img.text-center.col-md-12") ||
+      document.querySelector("#details > .row > .col-md-12")
+    );
+  }
+
+  function hideNativeSnipeQr() {
+    const nativeQrImg = document.querySelector(".asset-qr-img img");
+    if (nativeQrImg) {
+      nativeQrImg.style.display = "none";
+    }
+
+    // Optional: remove spacing left by the hidden QR
+    const qrWrap = document.querySelector(".asset-qr-img");
+    if (qrWrap) {
+      qrWrap.style.paddingTop = "4px";
+    }
+  }
+
+  function makeLink(label, bg, href) {
+    const a = document.createElement("a");
+    a.textContent = label;
+    a.href = href;
+    a.style.cssText =
+      "font:700 22px Segoe UI,Arial;" +
+      "color:#fff;background:" + bg + ";" +
+      "border-radius:12px;" +
+      "padding:16px 26px;" +
+      "min-width:220px;" +
+      "text-align:center;" +
+      "text-decoration:none;" +
+      "display:inline-block;" +
+      "box-shadow:0 6px 16px rgba(0,0,0,.18);";
+    return a;
+  }
+
+  function inject() {
+    hideNativeSnipeQr();
+
+    if (document.getElementById(CONTAINER_ID)) return;
+
+    const host = getHost();
+    if (!host) return;
+
+    const match = window.location.pathname.match(/^\/hardware\/(\d+)/);
+    if (!match) return;
+
+    const assetId = match[1];
+
+    const serial = getSerial();
+    if (!serial) return;
+
+    const box = document.createElement("div");
+    box.id = CONTAINER_ID;
+    box.style.cssText =
+      "margin-top:10px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;";
+
+    const bitlockerHref =
+      "assetcred://lookup?serial=" + encodeURIComponent(serial) + "&action=bitlocker&showqr=1";
+    const lapsHref =
+      "assetcred://lookup?serial=" + encodeURIComponent(serial) + "&action=laps";
+    const intuneHref =
+      "assetcred://lookup?assetid=" + encodeURIComponent(assetId) + "&action=intune";
+    box.appendChild(makeLink("BitLocker QR", "#16a085", bitlockerHref));
+    box.appendChild(makeLink("LAPS", "#2c3e50", lapsHref));
+    const intuneButton = makeLink("Intune", "#fff", intuneHref);
+
+      intuneButton.style.color = "#000000";
+      intuneButton.style.width = "450px";
+      intuneButton.style.boxSizing = "border-box";
+
+      box.appendChild(intuneButton);
+
+    host.appendChild(box);
+  }
+
+  inject();
+
+  const observer = new MutationObserver(() => inject());
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();

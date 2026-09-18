@@ -1,0 +1,1057 @@
+// ==UserScript==
+// @name         Snipe-IT - Recent Assets
+// @namespace    https://tampermonkey.net/
+// @version      1.3
+// @description  Permanently displays recently viewed Snipe-IT assets.
+// @match        */hardware/*
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_addStyle
+// @run-at       document-idle
+// ==/UserScript==
+
+(function () {
+    "use strict";
+
+    const STORAGE_KEY = "snipeit_recent_assets";
+    const MAX_ASSETS = 50;
+
+    // ============================================================
+    // STORAGE
+    // ============================================================
+
+    function getAssets() {
+        return GM_getValue(STORAGE_KEY, []);
+    }
+
+    function saveAssets(assets) {
+        GM_setValue(STORAGE_KEY, assets);
+    }
+
+    // ============================================================
+    // HELPERS
+    // ============================================================
+
+    function getText(element) {
+        if (!element) {
+            return "";
+        }
+
+        return element.textContent.replace(/\s+/g, " ").trim();
+    }
+
+    function escapeHTML(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function getDisplayAssetName(asset) {
+    const combinedText = [
+        asset.assetTag || "",
+        asset.name || ""
+    ].join(" ");
+
+    const match = combinedText.match(/\bHCC\d+\b/i);
+
+    if (match) {
+        return `Asset ${match[0].toUpperCase()}`;
+    }
+
+    return asset.name || "Unknown Asset";
+    }
+
+    function relativeTime(timestamp) {
+        if (!timestamp) {
+            return "Unknown";
+        }
+
+        const then = new Date(timestamp);
+        const now = new Date();
+
+        const seconds = Math.floor(
+            (now - then) / 1000
+        );
+
+        if (seconds < 60) {
+            return `${Math.max(seconds, 0)} sec ago`;
+        }
+
+        const minutes = Math.floor(seconds / 60);
+
+        if (minutes < 60) {
+            return `${minutes} min ago`;
+        }
+
+        const hours = Math.floor(minutes / 60);
+
+        if (hours < 24) {
+            return `${hours} hr ago`;
+        }
+
+        const days = Math.floor(hours / 24);
+
+        if (days < 7) {
+            return `${days} day${days === 1 ? "" : "s"} ago`;
+        }
+
+        return then.toLocaleDateString();
+    }
+
+    // ============================================================
+    // ASSET IDENTIFICATION
+    // ============================================================
+
+    function getAssetId() {
+        const match = window.location.pathname.match(
+            /\/hardware\/(\d+)/i
+        );
+
+        if (match) {
+            return match[1];
+        }
+
+        return window.location.href;
+    }
+
+    function getAssetURL() {
+        return window.location.href.split("#")[0];
+    }
+
+    // ============================================================
+    // ASSET NAME
+    // ============================================================
+
+    function getAssetName() {
+        const rows = [
+            ...document.querySelectorAll("tr")
+        ];
+
+        for (const row of rows) {
+            const cells = [
+                ...row.querySelectorAll("td, th")
+            ];
+
+            if (cells.length < 2) {
+                continue;
+            }
+
+            const label = getText(cells[0]).toLowerCase();
+
+            if (label === "asset name") {
+                const value = getText(cells[1]);
+
+                if (value) {
+                    return value;
+                }
+            }
+        }
+
+        const title = getText(
+            document.querySelector("title")
+        );
+
+        if (title) {
+            return title
+                .replace(/\s*-\s*Snipe-IT.*$/i, "")
+                .trim();
+        }
+
+        return "Unknown Asset";
+    }
+
+    // ============================================================
+    // ASSET TAG
+    // ============================================================
+
+function getAssetTag() {
+    const rows = [
+        ...document.querySelectorAll("tr")
+    ];
+
+    for (const row of rows) {
+        const cells = [
+            ...row.querySelectorAll("td, th")
+        ];
+
+        if (cells.length < 2) {
+            continue;
+        }
+
+        const label = getText(cells[0]).toLowerCase();
+
+        if (label === "asset tag") {
+            const value = getText(cells[1]);
+
+            if (value) {
+                return value;
+            }
+        }
+    }
+
+    return "";
+}
+
+    // ============================================================
+    // CURRENT USER
+    // ============================================================
+
+function getCurrentUser() {
+    /*
+     * Snipe-IT assigned users are represented by links
+     * using the /users/ URL pattern.
+     *
+     * Example:
+     *
+     * <a
+     *     title="Tom Burden"
+     *     href="https://asset.manage.ccmschools.edu.au/users/1666"
+     * >
+     *     Tom Burden
+     * </a>
+     */
+
+    const userLinks = [
+        ...document.querySelectorAll(
+            'a[href*="/users/"]'
+        )
+    ];
+
+    for (const link of userLinks) {
+        const name =
+            link.getAttribute("title") ||
+            getText(link);
+
+        if (!name) {
+            continue;
+        }
+
+        return name.trim();
+    }
+
+    return "Unassigned";
+}
+
+    // ============================================================
+    // LAST CHECKOUT
+    // ============================================================
+
+    function getLastCheckout() {
+        const elements = [
+            ...document.querySelectorAll(
+                "div, span, td, p, strong"
+            )
+        ];
+
+        for (const element of elements) {
+            const value = getText(element);
+
+            if (!value) {
+                continue;
+            }
+
+            if (/Last Checkout/i.test(value)) {
+                const match = value.match(
+                    /(\d{4}-\d{2}-\d{2})/
+                );
+
+                if (match) {
+                    return match[1];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // ============================================================
+    // HISTORY
+    // ============================================================
+
+    function getHistoryFromPage() {
+        const tables = [
+            ...document.querySelectorAll("table")
+        ];
+
+        for (const table of tables) {
+            const headers = [
+                ...table.querySelectorAll("thead th")
+            ].map(function (header) {
+                return getText(header).toLowerCase();
+            });
+
+            if (!headers.includes("action")) {
+                continue;
+            }
+
+            const actionIndex =
+                headers.indexOf("action");
+
+            const dateIndex =
+                headers.indexOf("created at");
+
+            const targetIndex =
+                headers.indexOf("target");
+
+            const rows = [
+                ...table.querySelectorAll("tbody tr")
+            ];
+
+            const events = [];
+
+            for (const row of rows) {
+                const cells = [
+                    ...row.querySelectorAll("td")
+                ];
+
+                if (!cells.length) {
+                    continue;
+                }
+
+                const action = getText(
+                    cells[actionIndex]
+                ).toLowerCase();
+
+                if (
+                    !action.includes("checkout") &&
+                    !action.includes("checkin")
+                ) {
+                    continue;
+                }
+
+                let eventType = "";
+
+                if (action.includes("checkout")) {
+                    eventType = "Checked out";
+                } else if (
+                    action.includes("checkin")
+                ) {
+                    eventType = "Checked in";
+                }
+
+                if (!eventType) {
+                    continue;
+                }
+
+                const date =
+                    dateIndex >= 0
+                        ? getText(cells[dateIndex])
+                        : "";
+
+                const target =
+                    targetIndex >= 0
+                        ? getText(cells[targetIndex])
+                        : "";
+
+                events.push({
+                    action: eventType,
+                    date: date,
+                    target: target
+                });
+            }
+
+            if (events.length > 0) {
+                return events[0];
+            }
+        }
+
+        return null;
+    }
+
+    // ============================================================
+    // RECORD ASSET
+    // ============================================================
+
+    function recordAsset() {
+        const id = getAssetId();
+        const existing = getAssets();
+
+        const previous = existing.find(
+            function (asset) {
+                return asset.id === id;
+            }
+        );
+
+        const history =
+            getHistoryFromPage();
+
+        const currentUser =
+            getCurrentUser();
+
+        /*
+         * If the page fails to identify the user,
+         * retain the previously known user.
+         */
+
+        let user = currentUser;
+
+        if (
+            currentUser === "Unassigned" &&
+            previous &&
+            previous.user &&
+            previous.user !== "Unassigned"
+        ) {
+            user = previous.user;
+        }
+
+        const asset = {
+            id: id,
+
+            name: getAssetName(),
+
+            assetTag: getAssetTag(),
+
+            url: getAssetURL(),
+
+            user: user,
+
+            lastViewed:
+                new Date().toISOString(),
+
+            lastCheckout:
+                getLastCheckout(),
+
+            transaction:
+                history ||
+                (
+                    previous
+                        ? previous.transaction
+                        : null
+                )
+        };
+
+        const remaining =
+            existing.filter(function (asset) {
+                return asset.id !== id;
+            });
+
+        remaining.unshift(asset);
+
+        saveAssets(
+            remaining.slice(
+                0,
+                MAX_ASSETS
+            )
+        );
+
+        return asset;
+    }
+
+    // ============================================================
+    // CREATE PANEL
+    // ============================================================
+
+    function createPanel() {
+
+        if (
+            document.getElementById(
+                "tm-snipe-recent-assets"
+            )
+        ) {
+            return;
+        }
+
+        const panel =
+            document.createElement("div");
+
+        panel.id =
+            "tm-snipe-recent-assets";
+        panel.className = "ra-hidden";
+
+        panel.innerHTML = `
+            <div class="ra-header">
+                <span>Recent Assets</span>
+
+                <span
+                    id="ra-count"
+                    class="ra-count"
+                >
+                    0
+                </span>
+            </div>
+
+            <div id="ra-list"></div>
+
+            <div class="ra-footer">
+                <button id="ra-clear">
+                    Clear History
+                </button>
+            </div>
+        `;
+
+        const navbar = document.querySelector(
+            ".navbar-custom-menu > .navbar-nav.nav"
+        );
+
+        if (navbar && !document.getElementById("ra-navbar-item")) {
+            const navbarItem = document.createElement("li");
+
+            navbarItem.id = "ra-navbar-item";
+            navbarItem.className = "ra-navbar-item";
+            navbarItem.innerHTML = `
+                <a
+                    href="#"
+                    id="ra-navbar-toggle"
+                    title="Recent Assets"
+                    aria-label="Recent Assets"
+                    aria-expanded="false"
+                >
+                    <i class="fa fa-history" aria-hidden="true"></i>
+                    <span class="sr-only">Recent Assets</span>
+                </a>
+            `;
+
+            navbar.appendChild(navbarItem);
+            navbarItem.appendChild(panel);
+
+            const navbarToggle =
+                document.getElementById("ra-navbar-toggle");
+
+            if (navbarToggle) {
+                navbarToggle.addEventListener(
+                    "click",
+                    function (event) {
+                        event.preventDefault();
+
+                        const isOpen =
+                            !panel.classList.contains("ra-hidden");
+
+                        panel.classList.toggle(
+                            "ra-hidden",
+                            isOpen
+                        );
+
+                        navbarToggle.setAttribute(
+                            "aria-expanded",
+                            String(!isOpen)
+                        );
+                    }
+                );
+            }
+
+            document.addEventListener(
+                "click",
+                function (event) {
+                    if (!navbarItem.contains(event.target)) {
+                        panel.classList.add("ra-hidden");
+
+                        if (navbarToggle) {
+                            navbarToggle.setAttribute(
+                                "aria-expanded",
+                                "false"
+                            );
+                        }
+                    }
+                }
+            );
+        } else {
+            document.body.appendChild(panel);
+        }
+
+        const clearButton =
+            document.getElementById(
+                "ra-clear"
+            );
+
+        if (clearButton) {
+            clearButton.addEventListener(
+                "click",
+                function () {
+
+                    const confirmed =
+                        confirm(
+                            "Clear recent asset history?"
+                        );
+
+                    if (confirmed) {
+                        saveAssets([]);
+                        render();
+                    }
+                }
+            );
+        }
+    }
+
+    // ============================================================
+    // RENDER PANEL
+    // ============================================================
+
+    function render() {
+
+        const list =
+            document.getElementById(
+                "ra-list"
+            );
+
+        const count =
+            document.getElementById(
+                "ra-count"
+            );
+
+        if (!list) {
+            return;
+        }
+
+        const assets = getAssets();
+
+        if (count) {
+            count.textContent =
+                assets.length;
+        }
+
+        if (!assets.length) {
+
+            list.innerHTML = `
+                <div class="ra-empty">
+                    No recent assets
+                </div>
+            `;
+
+            return;
+        }
+
+        list.innerHTML = "";
+
+        assets.forEach(function (asset) {
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "ra-item";
+
+            let transactionHTML = `
+                <div class="ra-none">
+                    No recent check-in/out
+                </div>
+            `;
+
+            if (asset.transaction) {
+
+                const tx =
+                    asset.transaction;
+
+                let transactionClass =
+                    "ra-none";
+
+                if (
+                    tx.action ===
+                    "Checked out"
+                ) {
+                    transactionClass =
+                        "ra-out";
+                } else if (
+                    tx.action ===
+                    "Checked in"
+                ) {
+                    transactionClass =
+                        "ra-in";
+                }
+
+                transactionHTML = `
+                    <div
+                        class="${transactionClass}"
+                    >
+                        ${escapeHTML(
+                            tx.action
+                        )}
+
+                        ${
+                            tx.target
+                                ? `
+                                    → ${escapeHTML(
+                                        tx.target
+                                    )}
+                                  `
+                                : ""
+                        }
+                    </div>
+
+                    <div class="ra-date">
+                        ${escapeHTML(
+                            tx.date || ""
+                        )}
+                    </div>
+                `;
+
+            } else if (
+                asset.lastCheckout
+            ) {
+
+                transactionHTML = `
+                    <div class="ra-out">
+                        Last checkout
+                    </div>
+
+                    <div class="ra-date">
+                        ${escapeHTML(
+                            asset.lastCheckout
+                        )}
+                    </div>
+                `;
+            }
+
+            item.innerHTML = `
+                <div class="ra-name">
+    ${escapeHTML(
+        getDisplayAssetName(asset)
+    )}
+</div>
+
+                ${
+                    asset.assetTag
+                        ? `
+                            <div class="ra-tag">
+                                ${escapeHTML(
+                                    asset.assetTag
+                                )}
+                            </div>
+                          `
+                        : ""
+                }
+
+                <div class="ra-user">
+                    ${escapeHTML(
+                        asset.user ||
+                        "Unassigned"
+                    )}
+                </div>
+
+                <div class="ra-viewed">
+                    Last viewed:
+                    ${relativeTime(
+                        asset.lastViewed
+                    )}
+                </div>
+
+                ${transactionHTML}
+            `;
+
+            item.addEventListener(
+                "click",
+                function () {
+                    window.location.href =
+                        asset.url;
+                }
+            );
+
+            list.appendChild(item);
+        });
+    }
+
+    // ============================================================
+    // CSS
+    // ============================================================
+
+    GM_addStyle(`
+
+        /*
+         * Main panel
+         */
+
+        #tm-snipe-recent-assets {
+              position: absolute;
+
+              top: 100%;
+              right: 0;
+              margin-top: 4px;
+
+           width: 360px;
+           height: 433px;
+              max-width: calc(100vw - 20px);
+              max-height: calc(100vh - 80px);
+
+           z-index: 999999;
+
+           display: flex;
+           flex-direction: column;
+
+           background: #292d30;
+           color: #eee;
+
+           border: 1px solid #555;
+           border-radius: 6px;
+
+           box-shadow:
+               0 5px 25px rgba(0, 0, 0, 0.55);
+
+           overflow: hidden;
+
+           font-family:
+                 Arial,
+               sans-serif;
+         }
+
+            .ra-navbar-item {
+                position: relative;
+            }
+
+                #tm-snipe-recent-assets.ra-hidden {
+                        display: none;
+                }
+        /*
+         * Header
+         */
+
+        .ra-header {
+    flex-shrink: 0;
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 11px 14px;
+
+    background: #343a40;
+
+    color: #fff;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    border-bottom: 1px solid #555;
+}
+
+        .ra-count {
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            min-width: 20px;
+
+            height: 20px;
+
+            padding: 0 5px;
+
+            border-radius: 10px;
+
+            background: #555;
+
+            color: #ddd;
+
+            font-size: 11px;
+        }
+
+        /*
+         * Asset list
+         */
+
+        #ra-list {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+        /*
+         * Individual asset
+         */
+
+        .ra-item {
+            padding: 11px 14px;
+
+            border-bottom:
+                1px solid #444;
+
+            cursor: pointer;
+
+            transition:
+                background 0.1s ease;
+        }
+
+        .ra-item:hover {
+            background: #343a40;
+        }
+
+        /*
+         * Asset name
+         */
+
+        .ra-name {
+            color: #78c8ff;
+
+            font-size: 13px;
+
+            font-weight: bold;
+
+            line-height: 1.3;
+        }
+
+        /*
+         * Asset tag
+         */
+
+        .ra-tag {
+            color: #aaa;
+
+            font-size: 11px;
+
+            margin-top: 2px;
+        }
+
+        /*
+         * Assigned user
+         */
+
+        .ra-user {
+            color: #fff;
+
+            font-size: 12px;
+
+            margin-top: 5px;
+        }
+
+        /*
+         * Last viewed
+         */
+
+        .ra-viewed {
+            color: #999;
+
+            font-size: 11px;
+
+            margin-top: 5px;
+        }
+
+        /*
+         * Checked out
+         */
+
+        .ra-out {
+            color: #7ddc9a;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+            margin-top: 6px;
+        }
+
+        /*
+         * Checked in
+         */
+
+        .ra-in {
+            color: #ffcf70;
+
+            font-size: 11px;
+
+            font-weight: bold;
+
+            margin-top: 6px;
+        }
+
+        /*
+         * Transaction date
+         */
+
+        .ra-date {
+            color: #999;
+
+            font-size: 10px;
+
+            margin-top: 2px;
+        }
+
+        /*
+         * No transaction
+         */
+
+        .ra-none {
+            color: #777;
+
+            font-size: 11px;
+
+            margin-top: 6px;
+        }
+
+        /*
+         * Empty list
+         */
+
+        .ra-empty {
+            padding: 25px;
+
+            text-align: center;
+
+            color: #999;
+        }
+
+        /*
+         * Footer
+         */
+
+        .ra-footer {
+    flex-shrink: 0;
+
+    padding: 7px;
+
+    background: #343a40;
+
+    text-align: right;
+
+    border-top: 1px solid #555;
+}
+
+        /*
+         * Clear button
+         */
+
+        #ra-clear {
+            background: transparent;
+
+            border:
+                1px solid #666;
+
+            border-radius: 4px;
+
+            color: #ccc;
+
+            padding: 5px 9px;
+
+            cursor: pointer;
+        }
+
+        #ra-clear:hover {
+            background: #444;
+
+            color: #fff;
+        }
+
+    `);
+
+    // ============================================================
+    // INITIALISE
+    // ============================================================
+
+    function init() {
+
+        recordAsset();
+
+        createPanel();
+
+        render();
+
+        /*
+         * Refresh the relative timestamps
+         * every 30 seconds.
+         */
+
+        setInterval(
+            function () {
+                render();
+            },
+            30000
+        );
+    }
+
+    init();
+
+})();
