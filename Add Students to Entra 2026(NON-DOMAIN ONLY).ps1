@@ -108,10 +108,12 @@ function New-OrUpdateStudent {
         [int]$YearLevel
     )
 
+    $FirstName = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($FirstName.Trim())
+    $LastName = [System.Globalization.CultureInfo]::CurrentCulture.TextInfo.ToTitleCase($LastName.Trim())
     $FullName = "$FirstName $LastName"
     $BaseUser = "$FirstName.$LastName"
-    $Username = $BaseUser.Substring(0, [Math]::Min(20, $BaseUser.Length))
-    $Email = "$Username@student.hopecc.sa.edu.au"
+    $Username = $BaseUser.Substring(0, [Math]::Min(20, $BaseUser.Length)).ToLowerInvariant()
+    $Email = "$Username@student.hopecc.sa.edu.au".ToLowerInvariant()
     $OU = Get-StudentOU -Year $YearLevel
 
     Update-Status "Step 1: Looking up AD account for $Username"
@@ -155,7 +157,7 @@ function New-OrUpdateStudent {
                 Update-Status "Step 4: Account is already enabled; skipping Enable-ADAccount for $Username"
             }
 
-            $RequiredUserPrincipalName = "$Username@student.hopecc.sa.edu.au"
+            $RequiredUserPrincipalName = "$Username@student.hopecc.sa.edu.au".ToLowerInvariant()
             $RequiredOffice = "$YearLevel"
             if ($existing.GivenName -ne $FirstName -or
                 $existing.Surname -ne $LastName -or
